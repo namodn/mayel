@@ -1,0 +1,666 @@
+#!/usr/bin/perl -w
+#
+#  MAYEL (Multi Aliasing Yon Email Likeness) - Email Client.
+#  Copyright (C) 1999  Nick Jennings
+#
+#  This program is free software; you can redistribute it and/or modify   
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation; either version 2 of the License, or 
+#  (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,  
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License  
+#  along with this program; if not, write to the Free Software
+#  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+#
+#  This program is developed and maintained by Nick Jennings.
+# Contact Information:
+#
+#    Nick Jennings                 nick@namodn.com 
+#    PMB 377 			   http://nick.namodn.com
+#    4096 Piedmont Ave.
+#    Oakland, CA 94611
+#
+# MAYEL homepage : http://www.namodn.com/linux/mayel.html
+#
+
+use strict;
+
+#######################################################################
+#	Defined Global Variables                                      #
+#######################################################################
+my $editor = 'jmacs';
+my $username = $ENV{USER};	# user's account name
+
+my %config = (	
+		"dir"		=> "$ENV{HOME}/.mayel",
+		"profile"	=> "$ENV{HOME}/profile",
+		"cache"		=> "$ENV{HOME}/mail_cache",
+		"postponed"	=> "$ENV{HOME}/postponed",
+		"sent_mail"	=> "$ENV{HOME}/sent_mail",
+	     );
+
+print "testing config hash: $config{'dir'}\n";
+
+my $cache_file = 0; 			# cache file number
+my $postponed_file = 0;			# postponed file number
+my @user_profile = ();			# User Profile: Full Name, SMTP,
+					#		Email, Mail Path,
+my @compose = ();			# Compose Email: From, To, Subject
+
+# my @other_emails = ();			# not used (yet)
+
+	### System Variables
+my $mail_path = '';			# dir where mail is stored
+my $sendmail_dir = `which sendmail`;	# dir where sendmail is located
+chomp ($sendmail_dir);
+
+#######################################################################
+
+
+print "$config{'dir'}\n";
+print "$config{'profile'}\n";
+
+
+
+
+#################### BEGIN
+
+print "\n";
+print "-" x 60, "\n";
+print "MAYEL - Multi Aliasing Yon Email Likeness\n";
+print "-" x 60, "\n";
+
+if (-d "$config{'dir'}" & -f "$config{'profile'}")	
+{ 
+	&profile_load(); 
+	&check_dirs();
+
+	if (@ARGV)	{ &mail_compose_new(); }
+	else 		{ &main(); }
+}
+else
+{
+	print "user profile does not exist!\n";
+	&check_dirs();
+	&profile_create();
+	&profile_save();
+	&main();
+}
+
+
+
+
+
+
+
+
+
+################## Pre-load Variables
+
+
+
+
+
+
+
+
+################## Profile Functions
+
+sub profile_create
+{
+
+	if (! -f $config{'profile'})
+	{
+		print "creating profile information...\n";
+
+		PROFILE:
+
+		print "\nEnter your Name as you'd like it to appear in your emails:\n";
+		chomp ($user_profile[0] = <STDIN>);
+
+		print "\nEnter your SMTP server:\n";
+		chomp ($user_profile[1] = <STDIN>);
+
+		print "\nEnter your email address (the one you will use when one is not specified):\n";
+		chomp ($user_profile[2] = <STDIN>);
+
+		print "\nEnter the full path to your mailbox file (i.e. /var/spool/mail/<username> or /home/<username>/mbox etc.):\n";
+		chomp ($user_profile[3] = <STDIN>);
+
+		my $verify = &verify('Name', $user_profile[0], 'SMTP Server', $user_profile[1], 'Email', $user_profile[2], 'Mail Path', $user_profile[3]);
+		chomp($verify);
+		if ($verify != '1')	{ goto PROFILE; }
+	}
+}	
+sub profile_save
+{
+	print "saving user profile...\n";
+
+	open(CONFIG, ">>$config{'profile'}") or die "Can't open $config{'profile'} : $!\n";
+		print CONFIG "$user_profile[0]\n";
+		print CONFIG "$user_profile[1]\n";
+		print CONFIG "$user_profile[2]\n";
+	close CONFIG;
+}
+sub profile_load
+{
+	print "loading user profile...\n";
+
+	open(CONFIG, "$config{'profile'}") or die "Can't open $config{'profile'} : $!\n";
+		my $c = 0;
+		while (<CONFIG>)
+		{
+			chomp ($_);
+			$user_profile[$c] = $_;
+			$c++;
+		}
+	close CONFIG;
+
+	print "\n";
+	print "                 Name: $user_profile[0]\n";
+	print "          SMTP Server: $user_profile[1]\n";	
+	print "Default Email Address: $user_profile[2]\n";
+	print "           Email Path: $user_profile[3]\n";
+	print "\n";
+
+}
+
+
+
+
+
+
+
+
+########################### Common Funtions
+
+sub verify
+{
+	my $c = 0;
+
+	print "\n";
+	print '.' x 24;
+	print " Please Verify "; 
+	print '.' x 23;
+	print "\n\n";
+	while ($c <= $#_)
+	{
+		print "$_[$c]", ': ';
+		$c++; 
+		print "$_[$c]", "\n";
+		$c++;
+	}
+	print "\n";
+	print "." x 60;
+	print "\n";
+
+	while ()
+	{
+		my $p = '';
+		print "Is the above information correct? (y/n): ";
+		chomp ($p = <STDIN>);
+		if ($p eq 'y')		{ return('1'); }
+		elsif ($p eq 'n')	{ return('2'); }
+		else
+		{
+			print "You must enter a 'y' (yes) or a 'n' (no)\n";
+		}
+
+	}
+}
+sub pause
+{
+	my $p = '';
+	print "\n";
+	if ($_[0])	{ print $_[0]; }
+	else		{ print "..hit any key to continue.."; }
+	chomp ($p = <STDIN>);
+	print "\n\n";
+}
+sub check_dirs
+{
+	if (! -d $config{'dir'})
+	{ 
+		print "creating $config{'dir'}...\n";
+		my $verify = print `mkdir $config{'dir'}`;
+		if ($verify != '1')	{ print "$verify\n"; exit; }
+		$verify = print `mkdir $config{'cache'}`;
+		if ($verify != '1')	{ print "$verify\n"; exit; }
+		$verify = print `mkdir $config{'postponed'}`;
+		if ($verify != '1')	{ print "$verify\n"; exit; }
+	}
+	if (-f $config{'dir'})
+	{
+		print "\n$config{'dir'}, is a file, moving file to $config{'dir'}.moved\n"; 
+		my $verify = `mv $config{'dir'} $config{'dir'}.moved`;
+		if ($verify)		{ print "$verify\n"; exit; }
+	}
+
+	if (! -d $config{'cache'})
+	{ 
+		my $verify = print `mkdir $config{'cache'}`;
+		if ($verify != '1')	{ print "$verify\n"; exit; }
+	}
+
+	if (-f "$config{'cache'}/*")
+	{ 
+		print "clearing cache...\n";
+		my $verify = print `rm $config{'cache'}/*`;
+		if ($verify != '1')	{ print "$verify\n"; exit; }
+	}		
+
+	if (! -d $config{'postponed'})
+	{ 
+		my $verify = print `mkdir $config{'postponed'}`;
+		if ($verify != '1')	{ print "$verify\n"; exit; }
+	}
+
+	if (! -d $config{'sent_mail'})
+	{ 
+		my $verify = print `mkdir $config{'sent_mail'}`;
+		if ($verify != '1')	{ print "$verify\n"; exit; }
+	}
+
+}
+sub prompt
+{}
+sub date_get
+{
+	my $p = `date`;
+	my @p = ();
+
+        if ($_[0] eq 'nums')
+        {
+                @p = split(' ', $p);
+		my $year = $p[5];
+		my $month = '';
+		my $day = '';
+
+		if    ($p[1] =~ /Jan/)  { $month = '01'; }
+		elsif ($p[1] =~ /Feb/)  { $month = '02'; }
+		elsif ($p[1] =~ /Mar/)  { $month = '03'; }
+		elsif ($p[1] =~ /Apr/)  { $month = '04'; }
+		elsif ($p[1] =~ /May/)  { $month = '05'; }
+		elsif ($p[1] =~ /Jun/)  { $month = '06'; }
+		elsif ($p[1] =~ /Jul/)  { $month = '07'; }
+		elsif ($p[1] =~ /Aug/)  { $month = '08'; }
+		elsif ($p[1] =~ /Sep/)  { $month = '09'; }
+		elsif ($p[1] =~ /Oct/)  { $month = '10'; }
+		elsif ($p[1] =~ /Nov/)  { $month = '11'; }
+		elsif ($p[1] =~ /Dec/)  { $month = '12'; }
+
+		if    ($p[2] == '1')    { $day = '01'; }
+		elsif ($p[2] == '2')    { $day = '02'; }
+		elsif ($p[2] == '3')    { $day = '03'; }
+		elsif ($p[2] == '4')    { $day = '04'; }
+		elsif ($p[2] == '5')    { $day = '05'; }
+		elsif ($p[2] == '6')    { $day = '06'; }
+		elsif ($p[2] == '7')    { $day = '07'; }
+		elsif ($p[2] == '8')    { $day = '08'; }
+		elsif ($p[2] == '9')    { $day = '09'; }
+		else			{ $day = "$p[2]"; }	
+
+                @p = split(':', $p[3]);
+                $p = "$month$day$p[0]$p[1]$p[2]$year";
+                return $p;
+	}
+
+	return $p;
+}		
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+############################# Main Menu
+
+sub main
+{
+	while ()
+	{
+		my $p = '';
+
+		print "-" x 60, "\n";
+		print "Main Menu\n";
+		print "-" x 60, "\n";
+		print "\n";
+		print " I - Inbox\n";
+		print " C - Compose\n";
+		print " Q - Quit\n";
+		print "\n";
+		print "-" x 60, "\n";
+		print ": ";
+		chomp ($p = <STDIN>);
+
+		if ( $p eq 'q')		{ exit; }
+		elsif ( $p eq 'i')	{ &mail_list(); }
+		elsif ( $p eq 'c')	{ &mail_compose(); }
+
+		else { print "Invalid command!\n"; }
+	}	
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+############################# Mail Read Functions
+
+sub mail_list
+{
+	print "\nInbox...\n\n";
+	open(INBOX, "$user_profile[3]") or die "mail_list: $!\n";
+	while (<INBOX>)
+	{
+		
+
+	}
+	close INBOX;
+
+	&pause();
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+############################# Mail Send Functions
+
+sub mail_compose
+{
+
+	while ()
+	{
+		my $p = '';
+		print "\n", 'Compose (N)ew message or continue a (P)ostponed message?: ';
+		chomp ($p = <STDIN>);
+		if ($p eq 'p')		{ &continue_postponed(); return; }
+		elsif ($p eq 'n')	{ &mail_compose_new(); return; }
+		else			{ print "Invalid command!\n"; }
+	}
+}	
+sub mail_compose_new
+{
+		print "Compose a message...\n";
+	while()
+	{
+		
+		if (!$ARGV[0])
+		{
+			print "\nFrom (default $user_profile[2]): ";
+			chomp ($compose[0] = <STDIN>);
+			if (!$compose[0])	
+				{ $compose[0] = $user_profile[2]; }
+
+			print "To: ";
+			chomp ($compose[1] = <STDIN>);
+		}	
+		else 
+		{ 
+			if ($ARGV[1])	{ $compose[0] = $ARGV[1]; }
+			else 		{ $compose[0] = $user_profile[2]; }
+			$compose[1] = $ARGV[0];
+			print "Composing new message to $compose[1] as $compose[0]\n";
+			@ARGV = (); 
+		}
+	
+		print "Subject: ";
+		chomp ($compose[2] = <STDIN>);
+	
+		my $verify = &verify('From', $compose[0], 'To', $compose[1], 'Subject', $compose[2]);
+		chomp($verify);
+		if ($verify == '1')
+		{ 
+			if (@_)	{ &mail_write($_[0], $_[1], $_[2]); return; }
+			else 	{ &mail_write(); return; }
+		}
+	}
+}
+sub mail_reply
+{}
+sub mail_write
+{
+	my $dir = '';
+	my $file = '';
+	my $ext = '';
+	if (@_)
+	{ 
+		$dir = $_[0]; 
+		$file = $_[1]; 
+		$ext = $_[2];
+	}
+	else 
+	{ 
+		$dir = $config{'cache'};
+		$file = $cache_file++; 
+		$ext = 'mail';
+	}
+
+	if ($ext eq 'mail')
+	{
+		if (-f "$dir/$file.$ext")
+		{
+			print "$dir/$file.$ext exists\n";
+			$file++;
+		}
+	}
+
+		system("$editor $dir/$file.$ext");
+
+	while ()
+	{
+		my $p = '';
+		print "\n", '(S)end message or (P)ostpone : ';
+		chomp ($p = <STDIN>);
+		if ($p eq 's')		{ &mail_send($dir, $file, $ext); return; }
+		elsif ($p eq 'p')	{ &postpone($dir, $file, $ext); return; }
+		print "Invalid command!\n";
+	}
+}
+sub mail_send
+{
+	my $dir = '';
+	my $file = '';
+	my $ext = '';
+	if (@_)
+	{
+		$dir = $_[0]; 
+		$file = $_[1]; 
+		$ext = $_[2];
+	}
+	else 
+	{ 
+		$dir = $config{'cache'};
+		$file = $cache_file; 
+		$ext = 'mail';
+	}
+
+	my @body = ();
+	my $c = 0;
+	open (BODY, "$dir/$file.$ext") or die "$!";	
+		while (<BODY>)
+		{
+			$body[$c] = $_;
+			$c++;
+		}
+	close BODY;
+
+	$c = 0;
+
+	open (MAIL, "| $sendmail_dir -t -oi") or die "$!";
+		print MAIL "To: $compose[1]\n";
+		print MAIL "From: $compose[0]\n";
+		print MAIL "Subject: $compose[2]\n";
+
+		while ($c <= $#body)
+		{
+			print MAIL "$body[$c]\n";
+			$c++;
+		}
+
+	close MAIL;
+	
+	my $date = &date_get('nums');
+	system("mv $dir/$file.$ext $config{'sent_mail'}/$date.sent");
+	print "message sent...\n";
+}
+
+
+
+
+
+
+
+
+######################### Postpone Related
+
+sub postpone
+{
+	my $dir = '';
+	my $file = '';
+	my $ext = '';
+	if (@_)
+	{
+		$dir = $_[0]; 
+		$file = $_[1]; 
+		$ext = $_[2];
+	}
+	else 
+	{ 
+		$dir = $config{'cache'};
+		$file = $cache_file; 
+		$ext = 'mail';
+	}
+	my $p ='';
+	print "Enter a one word name for your postponed message:\n";
+	chomp ($p = <STDIN>);
+	if ($p eq '') { print "enter a word, or tpye '.' to cancel postponed message\n"; redo;}
+	elsif ($p eq '.') { return; }
+	else
+	{
+		$postponed_file = $p;
+		my $verify = print `mv $dir/$file.$ext $config{'postponed'}/$postponed_file.p`;
+		if ($verify != '1')	{ print "$verify\n"; exit; }
+	
+		open(PINFO, ">>$config{'postponed'}/$postponed_file.info") or die "$!\n";
+			print PINFO "$compose[0]\n";
+			print PINFO "$compose[1]\n";
+			print PINFO "$compose[2]\n";
+		close PINFO;
+		print "Email postponed with the name : $postponed_file\n";
+	}
+}
+sub continue_postponed
+{
+	print "continue postponed message\n\n";
+	while ()
+	{
+		print "\n  postponed messages...\n\n"; 
+		while (<$config{'postponed'}/*.p>)
+		{
+			chomp($_);
+			my @temp = split('/', $_);
+			my $print = substr($temp[$#temp], 0, -2);
+			print "$print\n";
+		}
+		print "\nEnter the name of the message you would like to continue:\n";
+		my $p = '';
+		chomp ($p = <STDIN>);
+	
+		if ($p eq '.') { return; }
+
+		if (! -f "$config{'postponed'}/$p.p")
+		{ 
+			print "That message name does not exisit!\n"; 
+			print "please enter a valid name or '.' to cancel\n";
+		} 
+		else
+		{
+			if (-f "$config{'postponed'}/$p.info")
+			{
+				&postponed_get_info("$p");
+				return;
+			}
+			else
+			{
+				print "no 'info' file, dont know who it was ment for etc.\n";
+			}
+		}
+	}
+}
+sub postponed_get_info
+{
+	my $p = '';
+	if ($_[0])  { $p = $_[0]; }
+	else	    { print "postponed_get_info: no file specified"; return; }
+
+	my $c = 0;
+
+	open (PINFO, "$config{'postponed'}/$p.info") or die "$!\n";
+	while (<PINFO>)
+	{
+		$compose[$c] = $_;
+		chomp ($compose[$c]);
+		$c++;
+	}
+
+	my $verify = &verify('From', $compose[0], 'To', $compose[1], 'Subject', $compose[2]);
+	chomp($verify);
+	if ($verify == '1')
+	{ &mail_write("$config{'postponed'}", "$p", "p"); return; }
+	else 
+	{ &mail_compose_new($config{'postponed'}, $p, 'p'); return; }
+
+}
