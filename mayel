@@ -31,12 +31,11 @@
 use strict;
 
 
-
 ####################################################################
 ### >>>>>>>>>>>>      Defined Global Variables      <<<<<<<<<<<< ###
 ####################################################################
 
-my $editor = 'jmacs';
+my $editor = $ENV{EDITOR};
 my $username = $ENV{USER};	# user's account name
 
 my %config = (	
@@ -47,28 +46,23 @@ my %config = (
 		"sent_mail"	=> "$ENV{HOME}/sent_mail",
 	     );
 
-print "testing config hash: $config{'dir'}\n";
-
 my $cache_file = 0; 			# cache file number
 my $postponed_file = 0;			# postponed file number
 my @user_profile = ();			# User Profile: Full Name, SMTP,
 					#		Email, Mail Path,
+
 my @compose = ();			# Compose Email: From, To, Subject
+#my @other_emails = ();			# not used (yet)
 
-# my @other_emails = ();			# not used (yet)
 
-	### System Variables
+#
+# >>> System Variables <<<
+#
+
 my $mail_path = '';			# dir where mail is stored
-my $sendmail_dir = `which sendmail`;	# dir where sendmail is located
-chomp ($sendmail_dir);
+my $sendmail_dir = '/usr/sbin/sendmail';   # dir where sendmail is located
 
 #######################################################################
-
-
-
-print "$config{'dir'}\n";
-print "$config{'profile'}\n";
-
 
 
 #############
