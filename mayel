@@ -30,9 +30,12 @@
 
 use strict;
 
-#######################################################################
-#	Defined Global Variables                                      #
-#######################################################################
+
+
+####################################################################
+### >>>>>>>>>>>>      Defined Global Variables      <<<<<<<<<<<< ###
+####################################################################
+
 my $editor = 'jmacs';
 my $username = $ENV{USER};	# user's account name
 
@@ -62,13 +65,15 @@ chomp ($sendmail_dir);
 #######################################################################
 
 
+
 print "$config{'dir'}\n";
 print "$config{'profile'}\n";
 
 
 
-
-#################### BEGIN
+#############
+### BEGIN ###
+#############
 
 print "\n";
 print "-" x 60, "\n";
@@ -97,19 +102,17 @@ else
 
 
 
-
-
-
-################## Pre-load Variables
-
-
-
+##########################
+### Pre-load Variables ###
+##########################
 
 
 
 
 
-################## Profile Functions
+#############################################################
+### >>>>>>>>>>>>      Profile Functions      <<<<<<<<<<<< ###
+#############################################################
 
 sub profile_create
 {
@@ -137,6 +140,7 @@ sub profile_create
 		if ($verify != '1')	{ goto PROFILE; }
 	}
 }	
+
 sub profile_save
 {
 	print "saving user profile...\n";
@@ -147,6 +151,7 @@ sub profile_save
 		print CONFIG "$user_profile[2]\n";
 	close CONFIG;
 }
+
 sub profile_load
 {
 	print "loading user profile...\n";
@@ -173,11 +178,9 @@ sub profile_load
 
 
 
-
-
-
-
-########################### Common Funtions
+###########################################################
+### >>>>>>>>>>>>      Common Funtions      <<<<<<<<<<<< ###
+###########################################################
 
 sub verify
 {
@@ -213,6 +216,7 @@ sub verify
 
 	}
 }
+
 sub pause
 {
 	my $p = '';
@@ -222,6 +226,7 @@ sub pause
 	chomp ($p = <STDIN>);
 	print "\n\n";
 }
+
 sub check_dirs
 {
 	if (! -d $config{'dir'})
@@ -267,8 +272,10 @@ sub check_dirs
 	}
 
 }
+
 sub prompt
 {}
+
 sub date_get
 {
 	my $p = `date`;
@@ -316,22 +323,9 @@ sub date_get
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-############################# Main Menu
+#####################################################
+### >>>>>>>>>>>>      Main Menu      <<<<<<<<<<<< ###
+#####################################################
 
 sub main
 {
@@ -362,32 +356,9 @@ sub main
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-############################# Mail Read Functions
+###############################################################
+### >>>>>>>>>>>>      Mail Read Functions      <<<<<<<<<<<< ###
+###############################################################
 
 sub mail_list
 {
@@ -406,17 +377,9 @@ sub mail_list
 
 
 
-
-
-
-
-
-
-
-
-
-
-############################# Mail Send Functions
+###############################################################
+### >>>>>>>>>>>>      Mail Send Functions      <<<<<<<<<<<< ###
+###############################################################
 
 sub mail_compose
 {
@@ -431,6 +394,7 @@ sub mail_compose
 		else			{ print "Invalid command!\n"; }
 	}
 }	
+
 sub mail_compose_new
 {
 		print "Compose a message...\n";
@@ -468,8 +432,10 @@ sub mail_compose_new
 		}
 	}
 }
+
 sub mail_reply
 {}
+
 sub mail_write
 {
 	my $dir = '';
@@ -509,6 +475,7 @@ sub mail_write
 		print "Invalid command!\n";
 	}
 }
+
 sub mail_send
 {
 	my $dir = '';
@@ -560,11 +527,9 @@ sub mail_send
 
 
 
-
-
-
-
-######################### Postpone Related
+###########################################################
+### >>>>>>>>>>>>      Postpone Related     <<<<<<<<<<<< ###
+###########################################################
 
 sub postpone
 {
@@ -602,6 +567,7 @@ sub postpone
 		print "Email postponed with the name : $postponed_file\n";
 	}
 }
+
 sub continue_postponed
 {
 	print "continue postponed message\n\n";
@@ -640,6 +606,7 @@ sub continue_postponed
 		}
 	}
 }
+
 sub postponed_get_info
 {
 	my $p = '';
