@@ -143,6 +143,7 @@ sub profile_save
 		print CONFIG "$user_profile[0]\n";
 		print CONFIG "$user_profile[1]\n";
 		print CONFIG "$user_profile[2]\n";
+		print CONFIG "$user_profile[3]\n";
 	close CONFIG;
 }
 
