@@ -40,10 +40,10 @@ my $username = $ENV{USER};	# user's account name
 
 my %config = (	
 		"dir"		=> "$ENV{HOME}/.mayel",
-		"profile"	=> "$ENV{HOME}/profile",
-		"cache"		=> "$ENV{HOME}/mail_cache",
-		"postponed"	=> "$ENV{HOME}/postponed",
-		"sent_mail"	=> "$ENV{HOME}/sent_mail",
+		"profile"	=> "$ENV{HOME}/.mayel/profile",
+		"cache"		=> "$ENV{HOME}/.mayel/mail_cache",
+		"postponed"	=> "$ENV{HOME}/.mayel/postponed",
+		"sent_mail"	=> "$ENV{HOME}/.mayel/sent_mail",
 	     );
 
 my $cache_file = 0; 			# cache file number
